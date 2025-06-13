@@ -4,6 +4,17 @@
 -- you do for a plugin at the top level, you can do for a dependency.
 --
 -- Use the `dependencies` key to specify the dependencies of a particular plugin
+function my_previewer_maker(opts)
+  return telescope.previewers.new_termopen_previewer {
+    get_command = function(entry)
+      if string.match(entry.value, '%.') then
+        return { 'file', entry.value, '--', opts }
+      else
+        return { 'cat', entry.value, '--', opts }
+      end
+    end,
+  }
+end
 
 return {
   { -- Fuzzy Finder (files, lsp, etc)
@@ -52,16 +63,25 @@ return {
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+
       require('telescope').setup {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          file_previewer = require('telescope.previewers').vim_buffer_vimgrep.new,
+          -- file_previewer = require'telescope.previewers'.vim_buffer_cat.new,
+          -- previewer = my_previewer_maker,
+        },
+        pickers = {
+          buffers = {
+            mappings = {
+              i = {
+                ['<c-x>'] = 'delete_buffer',
+              },
+            },
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -69,15 +89,34 @@ return {
         },
       }
 
+      local builtin = require 'telescope.builtin'
+      local utils = require 'telescope.utils'
+
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
-      vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
+      vim.keymap.set('n', '<leader>sH', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+
+      vim.keymap.set('n', '<leader>sF', function()
+        require('telescope.builtin').find_files {
+          attach_mappings = function(_, map)
+            map('i', '<CR>', function(prompt_bufnr)
+              local action_state = require 'telescope.actions.state'
+              local actions = require 'telescope.actions'
+              local entry = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
+              vim.cmd('vsplit ' .. entry.path)
+            end)
+            return true
+          end,
+        }
+      end, { desc = '[S]earch [F]iles (Vsplit)' })
+
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -85,6 +124,17 @@ return {
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+      vim.keymap.set('n', '<leader>sa', function()
+        require('telescope.builtin').find_files {
+          cwd = '/Users/tommylanghelle/repos',
+          prompt_title = 'Search in Repos',
+        }
+      end, { desc = '[S]earch [A]round in repos' })
+
+      vim.keymap.set('n', '<leader>sb', function()
+        vim.cmd 'Vexplore */%:t'
+      end, { desc = '[S]earch [B]rowse files' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()

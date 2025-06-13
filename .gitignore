@@ -1,3 +1,4 @@
+lua/kickstart/plugins/db-config.lua
 tags
 test.sh
 .luarc.json
