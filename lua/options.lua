@@ -62,3 +62,7 @@ vim.opt.cursorline = true
 vim.opt.scrolloff = 10
 
 -- vim: ts=2 sts=2 sw=2 et
+--
+vim.opt.tabstop = 4 -- Number of spaces a tab counts for
+vim.opt.shiftwidth = 4 -- Number of spaces used for indentation
+vim.opt.expandtab = true -- Use spaces instead of tabs
